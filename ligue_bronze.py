@@ -131,11 +131,15 @@ class Creature:
 
 # classe qui gère la logique de jeu 
 class Game:
+    total_creature = -1
     my_score = -1
     foe_score = -1
     IA_scan_count = -1
     radarRange = 0 
     nearest_creature = None
+    global_radar_list = []
+    total_creature_list = []
+    total_creature_list_without_monsters = []
 
     # méthode de mise à jour des scans de créatures pour le joueur 
     @staticmethod
@@ -220,12 +224,7 @@ class Game:
             drone = Drone(drone_id, drone_x, drone_y, emergency, battery)
 
             Drone.ennemi_drones_list.append(drone)
-            # ennemiDrone.drone_id = drone_id
-            # ennemiDrone.drone_x = drone_x
-            # ennemiDrone.drone_y = drone_y
-            # ennemiDrone.battery = battery
 
-         
 
     @staticmethod
     def updateCreature():
@@ -343,12 +342,10 @@ class Game:
 
         return (math.floor(drone_y), math.floor(drone_x))
 
-
-
-
-
     @staticmethod
     def updateDroneRadarDetails():
+
+        Game.global_radar_list = []
         
         radar_blip_count = int(input())
 
@@ -363,6 +360,8 @@ class Game:
             radar = inputs[2]
             radarTuple = (drone_id, creature_id, radar)
 
+            Game.global_radar_list.append(radarTuple)
+
 
             # mise à jour des radars de chaque drone 
             for drone in Drone.my_drones_list:
@@ -373,7 +372,28 @@ class Game:
                 if ennemiDrone.drone_id == drone_id:
                     ennemiDrone.radarListeDetails.append(radarTuple)
             
-            # Drone.radar_details.append(radarTuple)
+        debug("Global_radar_liste", Game.global_radar_list)
+            
+
+    @staticmethod
+    def getAllCreatures():
+        creature_count = int(input())
+        Game.total_creature = creature_count
+        # debug("creature_count ;", creature_count)
+        for i in range(creature_count):
+            creature_id, color, _type = [int(j) for j in input().split()]
+            # debug("creature_id : ", creature_id)
+
+            Game.total_creature_list.append((creature_id, color, _type))
+
+        for creature in Game.total_creature_list:
+            if creature[1] != -1:
+                Game.total_creature_list_without_monsters.append(creature)
+
+        debug("liste des créatures total :", Game.total_creature_list)
+        debug("len : ", len(Game.total_creature_list))
+        debug("liste des creatures sans les monstres : ", Game.total_creature_list_without_monsters)
+        debug("len : ", len(Game.total_creature_list_without_monsters))
 
 
 
@@ -396,24 +416,15 @@ def calculY(angle, hyp):
 # init #####################################################################
 
 
-# instanciation d'un nouveau drone
-# myDrone = Drone(1,0,0, None, [])
+# # nombre de créatures 
+# creature_count = int(input())
+# # debug("creature_count ;", creature_count)
+# for i in range(creature_count):
+#     creature_id, color, _type = [int(j) for j in input().split()]
+#     # debug("creature_id : ", creature_id)
 
-# # instanciation d'un nouveau drone ennemi 
-# ennemiDrone = Drone(1,0,0, None, [])
+Game.getAllCreatures()
 
-# nombre de créatures 
-creature_count = int(input())
-# debug("creature_count ;", creature_count)
-for i in range(creature_count):
-    creature_id, color, _type = [int(j) for j in input().split()]
-    # debug("creature_id : ", creature_id)
-
-
-#instanciation de la board
-
-# board = Board()
-# debug(board)
 touchDeep = False
 gameCount = 0
 
@@ -426,10 +437,16 @@ while True:
     Creature.creatureFollowed = []
 
 
-
+    # mise à jour du scan global des ennemis
     Drone.ennemiScanList = []
+
+    # mise à jour du scan global des joueurs
     Drone.commonScanList = []
+
+    # mise à jour de la liste des scans globaux en attente de sauvegarde des joueurs
     Drone.waitingScanList = []
+
+    # mise à jour de la liste des scans globax en attente de ennemis
     Drone.ennemiWaitingScanList = []
 
     # init de la creature la plus proche
@@ -438,27 +455,28 @@ while True:
     # init radarDetails du Drone
     Drone.radar_details = []
 
-    # myDrone.scanList = []
-
-    # init de la flashLight
-    # myDrone.flashLight = False
     # init de la liste des creatures
-
     Creature.creatureList = []
+
     # score actuel
     Game.my_score = int(input())
+
     # score de l'adversaire
     Game.foe_score = int(input())
+
     # update de la liste de scan du joueur 
     Game.updateScanPlayer()
+
     # update de la liste de scan de l'ennemi 
     Game.updateScanEnnemi()
+
     # update de la logique métier du player drone
     Game.updatePlayerDrone()
+
     # update de la logique métier du ennemi drone 
     Game.updateEnnemiDrone()
 
-    # inutile pour l'instant ####################################################
+    # Gestion des scans en attente ####################################################
     drone_scan_count = int(input())
 
     
@@ -499,28 +517,26 @@ while True:
 
     # for i in range(Drone.my_drones_count):
     for drone in Drone.my_drones_list:
-        debug("total drones: ", creature_count )
-        debug("drones :", drone.drone_id)
+        # debug("total drones: ", creature_count )
+        # debug("drones :", drone.drone_id)
         # debug("drone_count", Drone.my_drone_count)
         output = ""
 
-        debug("common friend ListeScan:", Drone.commonScanList)
-        debug("common ennemi ListeScan:", Drone.ennemiScanList)
-        debug("myScans:", drone.scanNotSaved)
-        debug("creatureCount: ", creature_count)
+        # debug("common friend ListeScan:", Drone.commonScanList)
+        # debug("common ennemi ListeScan:", Drone.ennemiScanList)
+        # debug("myScans:", drone.scanNotSaved)
+        debug("creatureCount: ", Game.total_creature_list_without_monsters)
         # debug("creatures_visibles : ", Creature.visiblesCreature)
 
         # si la scanList est complete est que l'ordinateur n'a pas fini
-        if(len(set(Drone.commonScanList)) == creature_count):
-            debug('redesc', 'iiiiii')
+        if(len(set(Drone.commonScanList)) == Game.total_creature_list_without_monsters):
             if drone.isLeader:
                 output = "Move 10000 10000 "
             else:
                 output = "Move 0 10000 "
 
         # si tous les drones sont scannés 
-        elif(len(drone.scanNotSaved) + len(Drone.commonScanList) == creature_count or len(drone.scanNotSaved)  >= 11 or creature_count == len(set(Drone.waitingScanList))):
-            debug('ici', 'ici')
+        elif(len(drone.scanNotSaved) + len(Drone.commonScanList) == Game.total_creature_list_without_monsters or len(drone.scanNotSaved)  >= 11 or Game.total_creature_list_without_monsters == len(set(Drone.waitingScanList))):
             output = f'Move 5000 450 '
 
         
@@ -569,7 +585,7 @@ while True:
 
                 # Vérifier si la créature n'est pas déjà suivie par un autre drone
                 if unseen_creatures_index not in Creature.creatureFollowed:
-                    debug("ici", 'la')
+                    
                     # Ajout de l'index de la créature suivie dans le tableau des créatures suivies
                     Creature.creatureFollowed.append(unseen_creatures_index)
 
@@ -580,16 +596,16 @@ while True:
 
 
 
-                    debug("creatutes followed :", Creature.creatureFollowed)
-                    debug("creatute index :", drone.creatureFollowed)
+                    # debug("creatutes followed :", Creature.creatureFollowed)
+                    # debug("creatute index :", drone.creatureFollowed)
 
                     current_creature_direction = unseen_creatures_direction
-                    debug('current_creature_direction: ', current_creature_direction)
+                    # debug('current_creature_direction: ', current_creature_direction)
 
                     # On dirige le drone vers la créature jusqu'à ce qu'elle soit visible
                     destination = Game.moveToRadarPosition(drone, current_creature_direction)
                     output = f'MOVE {destination[1]} {destination[0]} '
-                    debug("output: ", output)
+                    # debug("output: ", output)
 
 
         # Game.flashLight((myDrone.drone_y, myDrone.drone_x))
@@ -601,14 +617,6 @@ while True:
 
         print(output)
             
-
-
-   
-
-
-        
-
-
 
 
    
